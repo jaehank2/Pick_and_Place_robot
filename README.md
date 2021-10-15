@@ -1,4 +1,4 @@
-<h1 align="center"> CS225 Final Project </h1>
+<h1 align="center"> ECE470 Final Project </h1>
 
 ## Summary ##
 This is the final project for ECE470 - Introduction to Robotics. This project utilizes camera sensor and forward/inverse kinematics to control the robot. The aim of the project is to allow the robot to perform a pick and place task given certain inputs.

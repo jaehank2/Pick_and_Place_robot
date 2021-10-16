@@ -14,5 +14,5 @@ This is the final project for ECE470 - Introduction to Robotics. This project ut
 4. source for every new command prompt - `source devel/setup.bash`
 5. Optional (taken care in roslaunch): In one command prompt, launch roscore - `roscore`
 6. In a new command prompt, `roslaunch ur3_driver ur3_gazebo.launch`
-7. In catkin_ws/src/projectandDriver/lab2pkg_py/scripts - `chmod +x project.py`
-8. `rosrun lab2pkg_py lab2_exec.py --simulator True`
+7. In catkin_ws/src/projectandDriver/projectpkg_py/scripts - `chmod +x project.py`
+8. `rosrun lab2pkg_py project.py --simulator True`

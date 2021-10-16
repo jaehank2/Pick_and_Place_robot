@@ -17,6 +17,9 @@ import yaml
 import sys
 from math import pi
 from project_header import *
+import numpy as np
+from scipy.linalg import expm
+PI = 3.1415926535
 
 # 20Hz
 SPIN_RATE = 20
@@ -69,7 +72,6 @@ current_position_set = False
 # UR3 current position, using home position for initialization
 current_position = copy.deepcopy(home)
 
-############## Your Code Start Here ##############
 """
 TODO: Initialize Q matrix
 """
@@ -77,9 +79,7 @@ TODO: Initialize Q matrix
 Q = [ [Q11, Q12, Q13], \
       [Q21, Q22, Q23], \
       [Q31, Q32, Q33] ]
-############### Your Code End Here ###############
 
-############## Your Code Start Here ##############
 
 """
 TODO: define a ROS topic callback funtion for getting the state of suction cup
@@ -92,10 +92,6 @@ def gripper_callback(msg):
     digital_in_0 = msg.DIGIN
 
 
-
-
-
-############### Your Code End Here ###############
 
 
 """
@@ -166,6 +162,126 @@ def gripper(pub_cmd, loop_rate, io_0):
         spin_count = spin_count + 1
 
     return error
+
+
+
+def Get_MS():
+	# =================== Your code starts here ====================#
+	# Fill in the correct values for S1~6, as well as the M matrix
+	M = np.array([[0, -1, 0, 390], [0, 0, -1, 401], [1, 0, 0, 215.5], [0,0,0,1]])
+
+	# rotation matrix
+	# given in M as [[0,-1,0],[0,0,1],[1,0,0]] - end effector's x,y,z in base frame's x,y,z
+
+
+	# q = offset
+	# q1
+	q1 = np.array([-150,150,0])
+	# q2
+	q2 = np.array([-150,0,162])
+	# q3
+	q3 = np.array([94,0,162])
+	# q4
+	q4 = np.array([307,0,162])
+	# q5
+	q5 = np.array([0,260,162])
+	# q6
+	q6 = np.array([390,0,162])
+
+	# w - rotation axis in base frame
+	# w1
+	w1 = np.array([0,0,1])
+	# w2
+	w2 = np.array([0,1,0])
+	# w3
+	w3 = np.array([0,1,0])
+	# w4
+	w4 = np.array([0,1,0])
+	# w5
+	w5 = np.array([1,0,0])
+	# w6
+	w6 = np.array([0,1,0])
+
+	# v = -w x q
+	# v1
+	v1 = np.cross(-w1, q1)
+	# v2
+	v2 = np.cross(-w2, q2)
+	# v3
+	v3 = np.cross(-w3, q3)
+	# v4
+	v4 = np.cross(-w4, q4)
+	# v5
+	v5 = np.cross(-w5, q5)
+	# v6
+	v6 = np.cross(-w6, q6)
+
+	# S = (w, v), w is joint axis  and v = -w x q
+	# S1
+	S1 = np.array([[0, -1, 0, v1[0]], [1, 0, 0, v1[1]], [0, 0, 0, v1[2]], [0,0,0,0]])
+	# S1 = [w1, v1]
+	# S2
+	S2 = np.array([[0, 0, 1, v2[0]], [0, 0, 0, v2[1]], [-1, 0, 0, v2[2]], [0,0,0,0]])
+	# S2 = [w2, v2]
+	# S3
+	S3 = np.array([[0, 0, 1, v3[0]], [0, 0, 0, v3[1]], [-1, 0, 0, v3[2]], [0,0,0,0]])
+	# S3 = [w3, v3]
+	# S4
+	S4 = np.array([[0, 0, 1, v4[0]], [0, 0, 0, v4[1]], [-1, 0, 0, v4[2]], [0,0,0,0]])
+	# S4 = [w4, v4]
+	# S5
+	S5 = np.array([[0, 0, 0, v5[0]], [0, 0, -1, v5[1]], [0, 1, 0, v5[2]], [0,0,0,0]])
+	# S5 = [w5, v5]
+	# S6
+	S6 = np.array([[0, 0, 1, v6[0]], [0, 0, 0, v6[1]], [-1, 0, 0, v6[2]], [0,0,0,0]])
+	# S6 = [w6, v6]
+
+	S = [S1, S2, S3, S4, S5, S6]
+
+
+	# ==============================================================#
+	return M, S
+
+
+"""
+Function that calculates encoder numbers for each motor
+"""
+def lab_fk(theta1, theta2, theta3, theta4, theta5, theta6):
+
+	# Initialize the return_value
+	return_value = [None, None, None, None, None, None]
+
+	# =========== Implement joint angle to encoder expressions here ===========
+	print("Foward kinematics calculated:\n")
+
+	# =================== Your code starts here ====================#
+
+	M, S = Get_MS()
+	t1 = np.matmul(expm(S[0] * theta1), expm(S[1] * theta2))
+	t2 = np.matmul(t1, expm(S[2] * theta3))
+	t3 = np.matmul(t2, expm(S[3] * theta4))
+	t4 = np.matmul(t3, expm(S[4] * theta5))
+	t5 = np.matmul(t4, expm(S[5] * theta6))
+	T = np.matmul(t5, M)
+
+
+
+
+
+	# ==============================================================#
+
+	print(str(T) + "\n")
+
+	return_value[0] = theta1 + PI
+	return_value[1] = theta2
+	return_value[2] = theta3
+	return_value[3] = theta4 - (0.5*PI)
+	return_value[4] = theta5
+	return_value[5] = theta6
+
+	return return_value
+
+
 
 
 def move_arm(pub_cmd, loop_rate, dest, vel, accel):
@@ -337,7 +453,7 @@ def main():
     while(rospy.is_shutdown()):
         print("ROS is shutdown!")
 
-    rospy.loginfo("Sending Goals ...")
+    rospy.loginfo("Sending Goalss ...")
 
     loop_rate = rospy.Rate(SPIN_RATE)
 
@@ -349,6 +465,7 @@ def main():
 
         ### test
         # move_arm(pub_cmd, loop_rate, dest, vel, accel)
+
         move_linear(pub_command, loop_rate, 0, 4.0, 4.0)
         
         move_arm(pub_command, loop_rate, home, 4.0, 4.0)
@@ -360,6 +477,22 @@ def main():
         move_linear(pub_command, loop_rate, 2, 4.0, 4.0)
 
         move_arm(pub_command, loop_rate, home, 4.0, 4.0)
+
+        move_arm(pub_command, loop_rate, Q[0][0], 4.0, 4.0)
+        rospy.loginfo("Trying Suction on ...")
+        gripper(pub_command, loop_rate, suction_on)
+        rospy.loginfo("Suction on ...")
+        # Delay to make sure suction cup has grasped the block
+        time.sleep(1.0)
+        if digital_in_0 == 0:
+            # rospy.logerr("BLOCK NOT FOUND. System quitting...")
+            rospy.loginfo("BLOCK NOT FOUND. System quitting...")
+            gripper(pub_command, loop_rate, suction_off)
+            sys.exit()
+        else:
+            rospy.loginfo("BLOCK FOUND")
+            gripper(pub_command, loop_rate, suction_off)
+            sys.exit()
 
         ### end of test
 
